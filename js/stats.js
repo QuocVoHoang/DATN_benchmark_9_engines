@@ -1,0 +1,2 @@
+export function percentile(values,p){if(!values.length)return 0;const a=[...values].sort((x,y)=>x-y),i=Math.min(a.length-1,Math.ceil(p*a.length)-1);return a[Math.max(0,i)];}
+export function summarize(samples){const mean=samples.reduce((a,b)=>a+b,0)/(samples.length||1);return {mean,p50:percentile(samples,.5),p95:percentile(samples,.95),p99:percentile(samples,.99),max:samples.length?Math.max(...samples):0};}

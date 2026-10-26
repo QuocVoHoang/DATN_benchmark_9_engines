@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-EMSDK_DIR="${EMSDK_DIR:-$SCRIPT_DIR/../../../emsdk}"
+EMSDK_DIR="${EMSDK_DIR:-$SCRIPT_DIR/../../../../emsdk}"
 EM_CACHE_DIR="${EM_CACHE:-$SCRIPT_DIR/.em_cache}"
 EM_CONFIG_FILE="${EM_CONFIG:-$SCRIPT_DIR/.emscripten_local}"
 
