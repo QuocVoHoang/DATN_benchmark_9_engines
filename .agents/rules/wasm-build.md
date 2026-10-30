@@ -7,19 +7,18 @@ description: WASM build conventions and Emscripten configuration
 
 ## Build Command
 
-All WASM is built via `./build_wasm.sh`. Never call `emcc` directly.
+All WASM artifacts are built via `./build_wasm.sh` from the unified source `cpp/motion_detection.cpp`. Never edit generated files in `build/` manually.
 
-## Required Emscripten Flags
+## Generated Artifacts (`build/`)
 
-```bash
-emcc motion_wasm.cpp \
-    -O3 \                              # Maximum optimization
-    -s WASM=1 \                        # Output WebAssembly (not asm.js)
-    -s ALLOW_MEMORY_GROWTH=1 \         # Dynamic memory for 4K video
-    -s EXPORTED_FUNCTIONS='[...]' \    # Explicit function exports
-    -s EXPORTED_RUNTIME_METHODS='[...]' \
-    -o motion_wasm.js
-```
+`./build_wasm.sh` compiles `cpp/motion_detection.cpp` with `-O3` into 4 modularized ES6 factories:
+
+| Artifact | Flags | Engine Configurations |
+|---|---|---|
+| `build/wasm_scalar.js` | `-O3 -fno-vectorize -fno-slp-vectorize` | `wasm-scalar` |
+| `build/wasm_simd.js` | `-O3 -msimd128` | `wasm-simd` |
+| `build/wasm_pthread.js` | `-O3 -fno-vectorize -fno-slp-vectorize -pthread -s PTHREAD_POOL_SIZE=4` | `wasm-pthread-1`, `wasm-pthread-2`, `wasm-pthread-4` |
+| `build/wasm_simd_pthread.js` | `-O3 -msimd128 -pthread -s PTHREAD_POOL_SIZE=4` | `wasm-simd-pthread-1`, `wasm-simd-pthread-2`, `wasm-simd-pthread-4` |
 
 ## Exported Functions
 
@@ -32,29 +31,11 @@ Every C++ function called from JS must be listed in `EXPORTED_FUNCTIONS`:
 | `_processMotion` | Main motion detection entry point |
 | `_resetMotionDetector` | Clear previous frame state |
 | `_getChangedPixelCount` | Get motion pixel count after processing |
-
-When adding new C++ functions:
-1. Mark with `EMSCRIPTEN_KEEPALIVE` in C++
-2. Add to `EXPORTED_FUNCTIONS` in `build_wasm.sh`
-3. Add JS bridge method in `wasm_motion_bridge.js`
+| `_getOutput` | Get pointer to output RGBA motion buffer |
+| `_setThreadCount` | Configure active worker threads (1, 2, or 4) |
+| `_getThreadCount` | Query active worker threads |
 
 ## Runtime Methods
 
 `EXPORTED_RUNTIME_METHODS` must include:
-- `HEAPU8` — for reading/writing pixel data to WASM memory
-
-## Build Output
-
-- `motion_wasm.js` — Emscripten glue code (loads .wasm, sets up runtime)
-- `motion_wasm.wasm` — Compiled WebAssembly binary
-
-Both files are generated. **DO NOT edit manually**.
-
-## Emscripten Setup
-
-The build script auto-detects `emcc` from:
-1. System PATH (if already sourced)
-2. `../emsdk/emsdk_env.sh` (sibling directory)
-3. Custom `EMSDK_DIR` environment variable
-
-Cache is stored locally in `.em_cache/` to avoid permission issues.
+- `HEAPU8` — for reading/writing pixel data to WASM linear memory
